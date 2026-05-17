@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Test Push Pingkit</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Test Push">
+<meta name="theme-color" content="#0f1115">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="icon" type="image/png" href="/icon-192.png">
 <style>
   body{font-family:-apple-system,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#0f1115;color:#e8eaed;line-height:1.5}
   h1{font-size:20px;margin:0 0 4px}
@@ -20,6 +28,14 @@
 <h1>Test Push — Pingkit</h1>
 <p class="sub">Ambiente pulito · scope / · GitHub Pages</p>
 
+<div id="iosbanner" style="display:none;background:#7c2d12;border:1px solid #ea580c;border-radius:12px;padding:16px;margin-bottom:20px;font-size:15px;line-height:1.6">
+  ⚠️ <b>Su iPhone devi installare questa pagina come app.</b><br>
+  1. Tocca il pulsante <b>Condividi</b> (quadrato con freccia ↑) in basso in Safari<br>
+  2. Scorri e tocca <b>"Aggiungi alla schermata Home"</b><br>
+  3. Conferma, poi <b>apri l'app dalla schermata Home</b> (icona blu)<br>
+  4. Da lì premi "Attiva le notifiche"
+</div>
+
 <div class="row"><span id="d1" class="dot"></span><span>Service Worker</span></div>
 <div class="row"><span id="d2" class="dot"></span><span>OneSignal SDK</span></div>
 <div class="row"><span id="d3" class="dot"></span><span>Permesso notifiche</span></div>
@@ -35,6 +51,17 @@
 const logEl=document.getElementById('log');
 function log(m){logEl.textContent=(new Date().toLocaleTimeString())+'  '+m+'\n'+logEl.textContent;}
 function dot(id,cls){document.getElementById(id).className='dot '+cls;}
+
+// Rileva iOS Safari non installato (no Notification API => va installato come PWA)
+(function(){
+  var standalone = window.navigator.standalone === true ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (typeof Notification === 'undefined' || (isIOS && !standalone)) {
+    document.getElementById('iosbanner').style.display='block';
+    log('iOS rilevato: serve installare come app (vedi banner arancione sopra)');
+  }
+})();
 
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal){
