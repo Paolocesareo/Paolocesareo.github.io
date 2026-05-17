@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Push Pingkit</title>
+<style>
+  body{font-family:-apple-system,system-ui,sans-serif;max-width:560px;margin:0 auto;padding:24px;background:#0f1115;color:#e8eaed;line-height:1.5}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:#9aa0a6;font-size:14px;margin:0 0 24px}
+  button{font-size:17px;padding:16px 20px;width:100%;border:0;border-radius:12px;background:#3b82f6;color:#fff;font-weight:600;margin:8px 0;cursor:pointer}
+  button:active{background:#2563eb}
+  #log{background:#1a1d23;border-radius:12px;padding:16px;font-family:ui-monospace,Menlo,monospace;font-size:13px;white-space:pre-wrap;word-break:break-word;margin-top:20px;min-height:80px}
+  .row{display:flex;gap:8px;align-items:center;margin:6px 0;font-size:14px}
+  .dot{width:10px;height:10px;border-radius:50%;background:#5f6368;flex:none}
+  .ok{background:#34d399}.bad{background:#f87171}.wait{background:#fbbf24}
+</style>
+</head>
+<body>
+<h1>Test Push — Pingkit</h1>
+<p class="sub">Ambiente pulito · scope / · GitHub Pages</p>
+
+<div class="row"><span id="d1" class="dot"></span><span>Service Worker</span></div>
+<div class="row"><span id="d2" class="dot"></span><span>OneSignal SDK</span></div>
+<div class="row"><span id="d3" class="dot"></span><span>Permesso notifiche</span></div>
+<div class="row"><span id="d4" class="dot"></span><span>Subscription ID</span></div>
+
+<button id="sub">1 · Attiva le notifiche</button>
+<button id="check" style="background:#374151">2 · Verifica stato</button>
+
+<div id="log">In attesa…</div>
+
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+const logEl=document.getElementById('log');
+function log(m){logEl.textContent=(new Date().toLocaleTimeString())+'  '+m+'\n'+logEl.textContent;}
+function dot(id,cls){document.getElementById(id).className='dot '+cls;}
+
+window.OneSignalDeferred = window.OneSignalDeferred || [];
+OneSignalDeferred.push(async function(OneSignal){
+  try{
+    await OneSignal.init({ appId: "750ec04e-6756-434a-8356-032e92bce7d5" });
+    log('OneSignal init OK');
+    dot('d2','ok');
+    refresh();
+  }catch(e){ log('Errore init: '+e.message); dot('d2','bad'); }
+});
+
+async function refresh(){
+  try{
+    const regs = await navigator.serviceWorker.getRegistrations();
+    if(regs.length){ dot('d1','ok'); log('SW registrati: '+regs.length+' scope='+regs[0].scope); }
+    else { dot('d1','bad'); log('Nessun SW registrato'); }
+  }catch(e){ dot('d1','bad'); }
+  try{
+    const p = (window.OneSignal && OneSignal.Notifications) ? OneSignal.Notifications.permission : Notification.permission;
+    log('Permesso: '+p);
+    dot('d3', p===true||p==='granted' ? 'ok' : (p==='denied'?'bad':'wait'));
+  }catch(e){}
+  try{
+    const id = window.OneSignal && OneSignal.User && OneSignal.User.PushSubscription ? OneSignal.User.PushSubscription.id : null;
+    if(id){ dot('d4','ok'); log('SUB ID: '+id); }
+    else { dot('d4','wait'); log('SUB ID: ancora nullo'); }
+  }catch(e){ dot('d4','bad'); }
+}
+
+document.getElementById('sub').onclick = async ()=>{
+  log('Richiedo il permesso…');
+  try{
+    if(window.OneSignal && OneSignal.Notifications){
+      await OneSignal.Notifications.requestPermission();
+    } else {
+      await Notification.requestPermission();
+    }
+    log('Permesso gestito, attendo subscription…');
+    setTimeout(refresh, 2500);
+  }catch(e){ log('Errore permesso: '+e.message); }
+};
+document.getElementById('check').onclick = refresh;
+</script>
+</body>
+</html>
